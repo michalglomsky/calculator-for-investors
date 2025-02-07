@@ -1,84 +1,64 @@
-"""Basic menu interface for investor's calculator printed out in the console"""
+"""Basic menu interface for investor's calculator, printed out in the console"""
 
-def crud_menu():
-    """Opens CRUDE MENU. If Invalid option chosen returns 0 to get back to MAIN MENU"""
+# Defining menus as a dictionary
+MAIN_MENU = "MAIN MENU"
+CRUD_MENU = "CRUD MENU"
+TOPTEN_MENU = "TOP TEN MENU"
 
-    # Console Message
-    print("CRUD MENU\n"
-          "0 Back\n"
-          "1 Create a company\n"
-          "2 Read a company\n"
-            "3 Update a company\n"
-            "4 Delete a company\n"
-            "5 List all companies\n")
-    # Input and feedback
-    try:
-        option = int(input("Enter an option:"))
-        if option > 5:
-            print("Invalid option!")
-        else:
-            if option > 0:
-                print("Not implemented!")
-                return 0
-            else:
-                return 0
-    except Exception:
+MENUS = {
+    CRUD_MENU: {
+        "0": "Back",
+        "1": "Create a company",
+        "2": "Read a company",
+        "3": "Update a company",
+        "4": "Delete a company",
+        "5": "List all companies"
+    },
+    TOPTEN_MENU: {
+        "0": "Back",
+        "1": "List by ND/EBITDA",
+        "2": "List by ROE",
+        "3": "List by ROA"
+    },
+    MAIN_MENU: {
+        "0": "Exit",
+        "1": "CRUD operations",
+        "2": "Show top ten companies by criteria"
+    }
+}
+
+def print_menu(menu):
+    """Displays a given menu"""
+    print(menu)
+    for k, v in MENUS[menu].items():
+        print(f"{k} {v}")
+
+def get_option(menu):
+    """Displays a given menu and asks for a valid menu option until given"""
+    print_menu(menu)
+    while (option := input("Enter an option: ")) not in MENUS[menu]:
         print("Invalid option!")
+        print_menu(menu)
+    return option
 
-
-def topten_menu():
-    """Opens TOP TEN MENU. If Invalid option chosen returns 0 to get back to MAIN MENU"""
-
-    # Console Message
-    print("TOP TEN MENU\n"
-          "0 Back\n"
-          "1 List by ND/EBITDA\n"
-          "2 List by ROE\n"
-          "3 List by ROA\n")
-    # Input and feedback
-    try:
-        option = int(input("Enter an option:"))
-        if option > 3:
-            print("Invalid option!")
-        else:
-            if option > 0:
-                print("Not implemented!")
-                return 0
-            else:
-                return 0
-    except Exception:
-        print("Invalid option!")
-
-
-
-def main_menu():
-    """MAIN MENU which opens either CRUDE or TOP TEN menus"""
-
-    # Console Message
-    print("MAIN MENU\n"
-          "0 Exit\n"
-          "1 CRUD operations\n"
-          "2 Show top ten companies by criteria")
-    # Input and feedback
-    try:
-        option = int(input("Enter an option:"))
-        if option == 2:
-            option = topten_menu()
-            if option == 0:
-                main_menu()
-        elif option == 1:
-            option = crud_menu()
-            if option == 0:
-                main_menu()
-        elif option == 0:
-            print("Have a nice day!")
-        else:
-            print("Invalid option!")
-            main_menu()
-    except Exception:
-        print("Invalid option!")
+def sub_menu(menu):
+    """Opens CRUDE or TOP TEN menu and asks for a valid menu option until given"""
+    option = get_option(menu)
+    if option != "0":
+        print("Not implemented!")
+        main_menu()
+    else:
         main_menu()
 
+def main_menu():
+    """Opens MAIN MENU which opens either CRUDE or TOP TEN menus"""
+    option = get_option(MAIN_MENU)
+    if option == "0":
+        print("Have a nice day!")
+    elif option == "1":
+        sub_menu(CRUD_MENU)
+    elif option == "2":
+        sub_menu(TOPTEN_MENU)
 
-# Calling the MAIN MENU function to start the program
-main_menu()
+if __name__ == '__main__':
+    main_menu()
