@@ -1,64 +1,94 @@
-"""Basic menu interface for investor's calculator, printed out in the console"""
+import csv
+import os
+from sqlalchemy import create_engine, Column, Float, Integer, String
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Defining menus as a dictionary
-MAIN_MENU = "MAIN MENU"
-CRUD_MENU = "CRUD MENU"
-TOPTEN_MENU = "TOP TEN MENU"
 
-MENUS = {
-    CRUD_MENU: {
-        "0": "Back",
-        "1": "Create a company",
-        "2": "Read a company",
-        "3": "Update a company",
-        "4": "Delete a company",
-        "5": "List all companies"
-    },
-    TOPTEN_MENU: {
-        "0": "Back",
-        "1": "List by ND/EBITDA",
-        "2": "List by ROE",
-        "3": "List by ROA"
-    },
-    MAIN_MENU: {
-        "0": "Exit",
-        "1": "CRUD operations",
-        "2": "Show top ten companies by criteria"
-    }
-}
+def convert_value(column, value):
+    """
+    Convert the input value to the type expected by the given SQLAlchemy column.
+    Treats empty strings as None.
+    """
+    if value == "":
+        return None
 
-def print_menu(menu):
-    """Displays a given menu"""
-    print(menu)
-    for k, v in MENUS[menu].items():
-        print(f"{k} {v}")
-
-def get_option(menu):
-    """Displays a given menu and asks for a valid menu option until given"""
-    print_menu(menu)
-    while (option := input("Enter an option: ")) not in MENUS[menu]:
-        print("Invalid option!")
-        print_menu(menu)
-    return option
-
-def sub_menu(menu):
-    """Opens CRUDE or TOP TEN menu and asks for a valid menu option until given"""
-    option = get_option(menu)
-    if option != "0":
-        print("Not implemented!")
-        main_menu()
+    if isinstance(column.type, Integer):
+        return int(value)
+    elif isinstance(column.type, Float):
+        return float(value)
+    elif isinstance(column.type, String):
+        return str(value)
     else:
-        main_menu()
+        return value
 
-def main_menu():
-    """Opens MAIN MENU which opens either CRUDE or TOP TEN menus"""
-    option = get_option(MAIN_MENU)
-    if option == "0":
-        print("Have a nice day!")
-    elif option == "1":
-        sub_menu(CRUD_MENU)
-    elif option == "2":
-        sub_menu(TOPTEN_MENU)
+
+def load_csv(model, file_path, session):
+    """
+    Reads a CSV file and maps each row to an instance of the given model.
+
+    :param model: The SQLAlchemy model class.
+    :param file_path: Path to the CSV file.
+    :param session: SQLAlchemy session.
+    """
+    with open(file_path, encoding='utf-8') as csv_file:
+        csv_dictionary = csv.DictReader(csv_file)
+        for row in csv_dictionary:
+            instance = model()  # Create a new instance of the model
+            for key, value in row.items():
+                # Get the corresponding column from the model
+                column = model.__table__.columns.get(key)
+                if column is not None:
+                    converted_value = convert_value(column, value)
+                    setattr(instance, key, converted_value)
+            session.add(instance)
+
+
+Base = declarative_base()
+
+
+class Companies(Base):
+    __tablename__ = 'companies'
+    ticker = Column(String(100), primary_key=True)
+    name = Column(String(100))
+    sector = Column(String(100))
+
+
+class Financial(Base):
+    __tablename__ = 'financial'
+    ticker = Column(String(100), primary_key=True)
+    ebitda = Column(Float)
+    sales = Column(Float)
+    net_profit = Column(Float)
+    market_price = Column(Float)
+    net_debt = Column(Float)
+    assets = Column(Float)
+    equity = Column(Float)
+    cash_equivalents = Column(Float)
+    liabilities = Column(Float)
+
+
+def main():
+    db_path = "investor.db"
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    engine = create_engine('sqlite:///investor.db', echo=False)
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Paths to your CSV files
+    companies_path = "test/companies.csv"
+    financial_path = "test/financial.csv"
+
+    # Load data from CSV files using the helper function.
+    load_csv(Financial, financial_path, session)
+    load_csv(Companies, companies_path, session)
+
+    session.commit()
+    session.close()
+    print("Database created successfully!")
+
 
 if __name__ == '__main__':
-    main_menu()
+    main()
