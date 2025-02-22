@@ -146,21 +146,26 @@ def print_menu(menu):
 
 
 def get_option(menu):
-    """
-    Displays a given menu and asks for a valid menu option until given one
-    """
     print_menu(menu)
-    while (option := input("Enter an option: ")) not in MENUS[menu]:
-        print("Invalid option!")
-        print_menu(menu)
-    return option
+    if menu == TOPTEN_MENU:
+        option = input("Enter an option: ")
+        if option not in MENUS[menu]:
+            print("Invalid option!")
+            return None  # signal that an invalid option was entered
+        else:
+            return option
+    else:
+        while (option := input("Enter an option: ")) not in MENUS[menu]:
+            print("Invalid option!")
+            print_menu(menu)
+        return option
 
 
 def sub_menu(menu):
-    """
-    Opens CRUDE or TOP TEN menu and asks for a valid menu option until given.
-    """
     option = get_option(menu)
+    if option is None:  # if invalid option in TOPTEN_MENU
+        main_menu()
+        return
     if option != "0":
         if menu == CRUD_MENU:
             crud_menu(option)
@@ -389,9 +394,48 @@ def company_list_all():
 def topten_menu(option):
     """
     Top Ten Menu function, yet to be implemented.
+    :param option: Menu option entered by the user
     """
-    print("Not implemented!")
+    financials = session.query(Financial).all()
+    stat = 0
+    companies_list = []
+    if option == "1":
+        for financial in financials:
+            try:
+                stat = round(financial.net_debt / financial.ebitda, 2)
+            except TypeError:
+                stat = None
+            companies_list.append((financial.ticker, stat))
+        print("TICKER ND/EBITDA")
+        topten_sort_n_print(companies_list)
+    if option == "2":
+        for financial in financials:
+            try:
+                stat = round(financial.net_profit / financial.equity, 2)
+            except TypeError:
+                stat = None
+            companies_list.append((financial.ticker, stat))
+        print("TICKER ROE")
+        topten_sort_n_print(companies_list)
+    if option == "3":
+        for financial in financials:
+            try:
+                stat = round(financial.net_profit / financial.assets, 2)
+            except TypeError:
+                stat = None
+            companies_list.append((financial.ticker, stat))
+        print("TICKER ROA")
+        topten_sort_n_print(companies_list)
 
+def topten_sort_n_print(companies_list):
+    """
+    Takes a list of companies and their stat and sorts them to print a top ten list
+    :param companies_list: A list of tuples containing (ticker, stat) of all companies
+    """
+    filtered_list = [company for company in companies_list if company[1] is not None]
+    topten_list = sorted(filtered_list, key=lambda x: x[1], reverse=True)[:10]  # only top ten entries from list
+    for company in topten_list:
+        print(company[0], company[1])
 
 """Main function running the program"""
 
